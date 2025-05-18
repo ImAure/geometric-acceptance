@@ -1,2 +1,5 @@
-# geometric-acceptace
-Simulation of the geometric acceptance of a cylindrical detector in the precence of an isotropic point source.
+# geometric-acceptance
+Simulation of the geometric acceptance of a cylindrical detector simply placed along z axis in the precence of an isotropic point source.
+
+## usage: 
+`./sim <number of points> <radius> <distance>`
