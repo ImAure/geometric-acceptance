@@ -26,5 +26,4 @@ Each row in the file includes:
 
 ### Other Files
 
-The remaining `.c` files are drafts for simplified scenarios that do not involve a horizontal offset or an extended source.  
-They are kept for reference and are not part of the main simulation.
+The remaining `.c` files in the `extra` folder are drafts for simplified scenarios that do not involve a horizontal offset or an extended source. They are kept for reference and are not part of the main simulation.
