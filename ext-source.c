@@ -4,7 +4,9 @@
 #include <time.h>
 
 #define ARG_NUM     6
+#define STRLEN      1024
 #define DATA_PATH   "./tmp/out.txt"
+#define IMAGE_PATH  "./tmp/image.png"
 #define E0    -1
 #define E1    1
 #define E2    2
@@ -87,6 +89,7 @@ int myexit(int status, FILE *pf, char *buffer) {
 int main(int argc, char *argv[ARG_NUM]) {
     double h, d, b2, r_src, r_det;
     int n, i, hits;
+    char buffer[STRLEN];
     FILE *pf;
     direction ray;
     polar source;
@@ -125,5 +128,8 @@ int main(int argc, char *argv[ARG_NUM]) {
 
     fclose(pf);
     fprintf(stdout, "Ratio: %.6f\n", (double)hits / n);
+    sprintf(buffer, "python3 plot.py %s %s", DATA_PATH, IMAGE_PATH);
+    system(buffer);
+    fprintf(stdout, "Image generated in %s\n", IMAGE_PATH);
     return 0;
 }

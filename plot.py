@@ -1,10 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
 from mpl_toolkits.mplot3d import Axes3D
 
-file_path = 'tmp/out.txt'
+data_path = sys.argv[1]
+image_path = sys.argv[2]
 
-data = np.loadtxt(file_path, usecols=[0, 1, 2, 3, 4], delimiter=' ')
+data = np.loadtxt(data_path, usecols=[0, 1, 2, 3, 4], delimiter=' ')
 
 data_red = data[data[:, 4] == 1]
 srho = data_red[:, 0]
@@ -35,4 +37,4 @@ ax.set_xlabel('X')
 ax.set_ylabel('Y')
 ax.set_zlabel('Z')
 
-plt.show()
+plt.savefig(image_path, dpi = 1000)
