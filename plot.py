@@ -18,8 +18,8 @@ rphi = data_red[:, 3]
 sx = srho * np.cos(sphi)
 sy = srho * np.sin(sphi)
 
-rx = np.sin(rtheta) * np.cos(rphi)
-ry = np.sin(rtheta) * np.sin(rphi)
+rx = np.sin(rtheta) * np.cos(rphi) - sx
+ry = np.sin(rtheta) * np.sin(rphi) - sy
 rz = np.cos(rtheta)
 
 fig = plt.figure()
