@@ -123,7 +123,7 @@ int main(int argc, char *argv[ARG_NUM]) {
         } else {
             fprintf(pf, "%f %f %f %f 0", source.rho, source.phi, ray.theta, ray.phi);
         }
-        if (i != n - 1) fprintf(pf, "\n");        
+        if (i != n - 1) fprintf(pf, "\n");
     }
 
     fclose(pf);

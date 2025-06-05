@@ -28,7 +28,7 @@ ax.set_facecolor('black')
 fig.patch.set_facecolor('black')
 
 for i in range(len(rx)):
-    ax.plot([sx[i], rx[i]], [sy[i], ry[i]], [0, rz[i]], color='red')
+    ax.plot([sx[i], rx[i]], [sy[i], ry[i]], [0, rz[i]], color='white', linewidth=0.5)
 
 ax.set_xlim([-1, 1])
 ax.set_ylim([-1, 1])
