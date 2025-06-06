@@ -84,7 +84,7 @@ int elab_print(file_t *pf1, file_t *pf2, polar2D_t src_polar, dir3D_t ray, doubl
     equiv_y = dtc.y - offset;
 
     hist.rho = sqrt((dtc.x * dtc.x) + (equiv_y * equiv_y));
-    hist.phi = (hist.rho == 0) ? 0 : atan2(dtc.x, equiv_y);
+    hist.phi = (hist.rho == 0) ? 0 : atan2(equiv_y, dtc.x);
 
     (void)fprintf(pf1, "%f %f %f %f %f %f", src.x, src.y, src.z, dtc.x, dtc.y, dtc.z);
     (void)fprintf(pf2, "%f %f", hist.rho, hist.phi);
