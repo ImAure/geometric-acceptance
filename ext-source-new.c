@@ -6,8 +6,10 @@
 #define ARG_NUM 6
 #define STRLEN  1024
 
-#define HIT  " 1"
-#define MISS " 0"
+#define FILE_PREFIX    "./tmp/"
+#define FILE_RAW_NAME  "raw"
+#define FILE_CART_NAME "cartesian"
+#define FILE_SUFFIX    ".txt"
 
 #define ERR_ARGC -1
 #define ERR_FILE -2
@@ -64,10 +66,24 @@ int intcept(dir3D_t ray, double height, double offset, double radius) {
     return ((sin_theta * sin_theta * ((height * height + offset * offset) * (1 + u2) + r2 * (1 - u2)) - r2 + 2 * u * r2 * sin_theta * cos_theta) <= 0);
 }
 
-int cartesian_print(file_t pf, dir3D_t ray, polar2D_t src_polar, double height) {
+int cartesian_print(file_t *pf, polar2D_t src_polar, dir3D_t ray, double height, double offset) {
+    double ray_rho;
     point3D_t src, dtc;
 
+    if (pf == NULL) return -1;
 
+    src.x = src_polar.rho * cos(src_polar.phi);
+    src.y = src_polar.rho * sin(src_polar.phi);
+    src.z = 0;
+    
+    ray_rho = height / cos(ray.theta);
+
+    dtc.x = ray_rho * sin(ray.theta) * cos(ray.phi) + src.x;
+    dtc.y = ray_rho * sin(ray.theta) * sin(ray.phi) + src.y + offset;
+    dtc.z = height;
+
+    (void)fprintf(pf, "%f %f %f %f %f %f", src.x, src.y, src.z, dtc.x, dtc.y, dtc.z);
+    return 0;
 }
 
 int myexit(const int status, file_t *pf1, file_t *pf2, const char *message) {
@@ -89,8 +105,8 @@ int myexit(const int status, file_t *pf1, file_t *pf2, const char *message) {
             break;
     }
 
-    if (pf1 != NULL) fclose(pf1);
-    if (pf2 != NULL) fclose(pf2);
+    if (pf1 != NULL) (void)fclose(pf1);
+    if (pf2 != NULL) (void)fclose(pf2);
     return status;
 }
 
@@ -98,8 +114,8 @@ int main(int argc, char *argv[]) {
     double src_radius, dtc_height, dtc_offset, dtc_radius;
     double equiv_offset;
     int n, i, hits;
-    char buffer[STRLEN], file1[STRLEN], file2[STRLEN];
-    file_t *pf1;
+    char file1[STRLEN], file2[STRLEN];
+    file_t *pf1, *pf2;
     dir3D_t ray;
     polar2D_t src_point;
 
@@ -115,9 +131,9 @@ int main(int argc, char *argv[]) {
     dtc_offset = atof(argv[4]);
     dtc_radius = atof(argv[5]);
 
-    sprintf(file1, "%s", argv[6]);
+    (void)sprintf(file1, "%s%s-%s%s", FILE_PREFIX, FILE_RAW_NAME, argv[6], FILE_SUFFIX);
     pf1 = fopen(file1, "w");
-    sprintf(file2, "hits-cart-%s", argv[6]);
+    (void)sprintf(file2, "%s%s-%s%s", FILE_PREFIX, FILE_CART_NAME, argv[6], FILE_SUFFIX);
     pf2 = fopen(file2, "w");
 
     if (n <= 0)         return myexit(ERR, pf1, pf2, "Number of points must be a positive integer.");
@@ -129,14 +145,21 @@ int main(int argc, char *argv[]) {
 
     for (i = 0, hits = 0; i < n; i++) {
         if (rand_polar2D_gen(&src_point, src_radius) || rand_dir3D_gen(&ray)) return myexit(ERR, pf1, pf2, "Random number generation failed.");
-
         (void)fprintf(pf1, "%f %f %f %f", src_point.rho, src_point.phi, ray.theta, ray.phi);
-        if(intcept(ray, height, equiv_offset, dtc_radius)) {
-            if (hits == 0) fprintf()
-            (void)cartesian_print(pf2, ray, src_point, height);
+
+        equiv_offset = (src_point.rho * src_point.rho) + (dtc_offset * dtc_offset) - (2 * src_point.rho * dtc_offset * sin(src_point.phi));
+        if(intcept(ray, dtc_height, equiv_offset, dtc_radius)) {
+            if (hits) (void)fprintf(pf2, "\n");
+            (void)cartesian_print(pf2, src_point, ray, dtc_height, dtc_offset);
             hits++;
         }
-
         if (i != n - 1) fprintf(pf1, "\n");
+
     }
+    if (pf1) (void)fclose(pf1);
+    if (pf2) (void)fclose(pf2);
+    
+    (void)fprintf(stdout, "Hits: %d/%d\nRatio: %.6f\n", hits, n, (double)hits / (n * 2));
+    
+    return 0;
 }
