@@ -1,41 +1,34 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D  # Necessario anche se non usato direttamente
+import sys
+from mpl_toolkits.mplot3d import Axes3D
 
 if __name__ == "__main__":
-    # Percorso del file (modifica questo con il tuo path)
-    file_path = "hits-cart-out.txt"
+    file_path = sys.argv[1]
 
     data = np.loadtxt(file_path)
 
-    # Controllo colonne
     if data.shape[1] != 6:
         raise ValueError("Ogni riga deve contenere esattamente sei numeri.")
 
-    # Estrai coordinate
     x_start, y_start, z_start = data[:, 0], data[:, 1], data[:, 2]
     x_end,   y_end,   z_end   = data[:, 3], data[:, 4], data[:, 5]
 
-    # Crea figura
     fig = plt.figure(figsize=(10, 8))
     ax = fig.add_subplot(111, projection='3d')
 
-    # Disegna i segmenti
     for xs, ys, zs, xe, ye, ze in zip(x_start, y_start, z_start, x_end, y_end, z_end):
         ax.plot([xs, xe], [ys, ye], [zs, ze], color='gray', alpha=0.1)
 
-    # Marker per i punti iniziali (verde) e finali (rosso)
     ax.scatter(x_start, y_start, z_start, c='red', s=5, label='Inizio')
     ax.scatter(x_end, y_end, z_end, c='green', s=5, label='Fine')
 
-    # Etichette
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_zlabel('Z')
     plt.title("Segmenti 3D con punti di partenza e arrivo")
     ax.legend()
 
-    # Imposta la stessa scala per tutti gli assi
     all_points = np.concatenate([data[:, 0:3], data[:, 3:6]])
     x_vals, y_vals, z_vals = all_points[:, 0], all_points[:, 1], all_points[:, 2]
 
