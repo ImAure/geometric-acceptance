@@ -76,9 +76,14 @@ int elab_print(file_t *pf1, file_t *pf2, polar2D_t src_polar, dir3D_t ray, doubl
     src.z = 0;
 
     ray_rho = height / cos(ray.theta);
+    /*
+     * dtc.x = ray_rho * sin(ray.theta) * cos(ray.phi) + src.x;
+     * dtc.y = ray_rho * sin(ray.theta) * sin(ray.phi) + src.y;
+     * dtc.z = height;
+     */
 
-    dtc.x = ray_rho * sin(ray.theta) * cos(ray.phi) + src.x;
-    dtc.y = ray_rho * sin(ray.theta) * sin(ray.phi) + src.y + offset;
+    dtc.x = src.x + height * tan(ray.theta) * cos(ray.phi - src_polar.phi);
+    dtc.y = src.y + height * tan(ray.theta) * sin(ray.phi - src_polar.phi);
     dtc.z = height;
 
     equiv_y = dtc.y - offset;
@@ -152,13 +157,16 @@ int main(int argc, char *argv[]) {
     if (pf == NULL)     return myexit(ERR, pf, FILE_NUM, "Couldn't allocate memory.");
     for (i = 0; i < FILE_NUM; ++i) if (pf[i] == NULL) return myexit(ERR_FILE, pf, FILE_NUM, file_name[i]);
 
+    fprintf(stdout, "N: %d, src radius: %lf, dtc h: %lf, dtc offset: %lf, dtc radius: %lf\n", n, src_radius, dtc_height, dtc_offset, dtc_radius);
+
     for (i = 0, hits = 0; i < n; ++i) {
         if (rand_polar2D_gen(&src_point, src_radius) || rand_dir3D_gen(&ray)) return myexit(ERR, pf, FILE_NUM, "Random number generation failed.");
 
         if (i) (void)fprintf(pf[0], "\n");
         (void)fprintf(pf[0], "\n%f %f %f %f", src_point.rho, src_point.phi, ray.theta, ray.phi);
 
-        equiv_offset = (src_point.rho * src_point.rho) + (dtc_offset * dtc_offset) - (2 * src_point.rho * dtc_offset * sin(src_point.phi));
+        equiv_offset = sqrt((src_point.rho * src_point.rho) + (dtc_offset * dtc_offset) - (2 * src_point.rho * dtc_offset * sin(src_point.phi)));
+        printf("eq offset %f\n", equiv_offset);
         
         if(intcept(ray, dtc_height, equiv_offset, dtc_radius)) {
             if (hits) {
