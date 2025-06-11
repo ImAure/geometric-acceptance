@@ -3,8 +3,8 @@
 #include <math.h>
 #include <time.h>
 
-#define ARG_NUM  6
-#define FILE_NUM 3
+#define ARG_NUM  7
+#define FILE_NUM 2
 #define STRLEN   4096
 #define PREFIX  "./tmp/"
 #define SUFFIX  ".txt"
@@ -18,16 +18,16 @@ typedef struct _dir3D {
     double phi;
 } dir3D_t;
 
-typedef struct _polar2D {
+typedef struct _pol2D {
     double rho;
     double phi;
-} polar2D_t;
+} pol2D_t;
 
-typedef struct _point3D {
+typedef struct _car3D {
     double x;
     double y;
     double z;
-} point3D_t;
+} car3D_t;
 
 typedef FILE file_t;
 
@@ -67,7 +67,7 @@ int rand_dir3D_gen(dir3D_t *ptr) {
     return 0;
 }
 
-int rand_polar2D_gen(polar2D_t *ptr, double max_rho){
+int rand_polar2D_gen(pol2D_t *ptr, double max_rho){
     if ((ptr == NULL) || (max_rho < 0)) return -1;
     if (max_rho < 0) {
         ptr->rho = 0;
@@ -79,26 +79,53 @@ int rand_polar2D_gen(polar2D_t *ptr, double max_rho){
     return 0;
 }
 
-intcept(dir3D_t ray, polar2D_t src_polar, point3D_t dtc_cart) {
+int intcept(dir3D_t ray, pol2D_t src_polar, car3D_t dtc_cart, double dtc_radius) {
     double dx, dy, d, d2, u, u2;
-    point3D_t src_cart;
+    car3D_t src_cart;
+    
+    src_cart.x = src_polar.rho * cos(src_polar.phi);
+    src_cart.y = src_polar.rho * sin(src_polar.phi);
+    src_cart.z = 0;
+    
+    if (dtc_cart.z == 0) return 0;
+    
+    dx = dtc_cart.x - src_cart.x;
+    dy = dtc_cart.y - src_cart.x;
+    
+    d2 = dx * dx + dy * dy;
+    
+    u = dtc_cart.z * ray.theta;
+    
+    return ((d2 + (u * u) - (2 * sqrt(d2) * u * cos(src_polar.phi - atan2(dtc_cart.y, dtc_cart.x)))) <= (dtc_radius * dtc_radius));
+}
 
+int elab_print(file_t *pf, pol2D_t src_polar, dir3D_t ray, car3D_t dtc_cart, double dtc_polar_phi) {
+    double u, t, dx, dy;
+    car3D_t src_cart, hit_cart;
+    pol2D_t hit_pol;
+
+    if (pf == NULL) return -1;
+
+    u = dtc_cart.z * tan(ray.theta);
+    t = src_polar.phi - dtc_polar_phi;
+    
     src_cart.x = src_polar.rho * cos(src_polar.phi);
     src_cart.y = src_polar.rho * sin(src_polar.phi);
     src_cart.z = 0;
 
-    if (dtc_cart.z == 0) return 0;
+    hit_cart.x = src_cart.x + u * cos(t);
+    hit_cart.y = src_cart.y + u * sin(t);
+    hit_cart.z = dtc_cart.z;
 
-    dx = dtc_cart.x - src_cart.x;
-    dy = dtc_cart.y - src_cart.x;
+    dx = hit_cart.x - dtc_cart.x;
+    dy = hit_cart.y - dtc_cart.y;
+    hit_pol.rho = sqrt(dx * dx + dy * dy);
+    hit_pol.phi = atan2(dy, dx);
 
-    d2 = dx * dx + dy * dy;
+    (void)fprintf(pf, "%f %f %f %f %f %f %f %f", src_cart.x, src_cart.y, src_cart.z, hit_cart.x, hit_cart.y, hit_cart.z, hit_pol.rho, hit_pol.phi);
 
-    u = dtc_cart.z * ray.theta;
-
-    return (d2 + (u * u) - (2 * sqrt(d2) * u * cos(src_polar.phi - atan2(dtc_cart.y, dtc_cart.x))));
+    return 0;
 }
-
 
 int main(int argc, char *argv[]) {
     double src_radius, dtc_radius;
@@ -106,62 +133,57 @@ int main(int argc, char *argv[]) {
     char buffer[STRLEN * 2], file_name[FILE_NUM][STRLEN];
     file_t **pf;
     dir3D_t ray;
-    polar2D_t src_polar, dtc_polar;
-    point3D_t src_cart, dtc_cart;
-
+    pol2D_t src_polar, dtc_polar;
+    car3D_t src_cart, dtc_cart;
+    
     pf = (file_t **)malloc(sizeof(file_t) * FILE_NUM);
     for (i = 0; i < FILE_NUM; ++i) (pf[i] = NULL);
     srand(time(NULL));
     
     if (argc != (ARG_NUM + 1)) return myexit(ERR_ARGC, pf, FILE_NUM, argv[0]);
-
+    
     n          = atoi(argv[1]);
     src_radius = atof(argv[2]);
     dtc_cart.x = atof(argv[3]);
     dtc_cart.y = atof(argv[4]);
     dtc_cart.z = atof(argv[5]);
     dtc_radius = atof(argv[6]);
-
+    
     for (i = 0; i < FILE_NUM; ++i) {
-        (void)sprintf(file_name[i], "%s%s.%d%s", PREFIX, argv[6], i + 1, SUFFIX);
+        (void)sprintf(file_name[i], "%s%s.%d%s", PREFIX, argv[7], i + 1, SUFFIX);
         pf[i] = fopen(file_name[i], "w");
     }
-
+    
     if (n <= 0) return myexit(ERR, pf, FILE_NUM, "Number of points must be a positive integer.");
     if (src_radius < 0) return myexit(ERR, pf, FILE_NUM, "Source radius must be a non-negative number.");
-    if (dtc_radius <=0 0) return myexit(ERR, pf, FILE_NUM, "Detector radius must be a positive number.");
+    if (dtc_radius <= 0) return myexit(ERR, pf, FILE_NUM, "Detector radius must be a positive number.");
     if (pf == NULL)     return myexit(ERR, pf, FILE_NUM, "Couldn't allocate memory.");
     for (i = 0; i < FILE_NUM; ++i) if (pf[i] == NULL) return myexit(ERR_FILE, pf, FILE_NUM, file_name[i]);
 
+    dtc_polar.rho = sqrt(dtc_cart.x * dtc_cart.x + dtc_cart.y * dtc_cart.y);
+    dtc_polar.phi = atan2(dtc_cart.y, dtc_cart.x);
+    
     for (i = 0, hits = 0; i < n; ++i) {
-        if (rand_polar2D_gen(&src_point, src_radius) || rand_dir3D_gen(&ray)) return myexit(ERR, pf, FILE_NUM, "Random number generation failed.");
-
+        if (rand_polar2D_gen(&src_polar, src_radius) || rand_dir3D_gen(&ray)) return myexit(ERR, pf, FILE_NUM, "Random number generation failed.");
+        
         if (i) (void)fprintf(pf[0], "\n");
-        (void)fprintf(pf[0], "\n%f %f %f %f", src_point.rho, src_point.phi, ray.theta, ray.phi);
-
-        if (intcept(ray, src_polar, dtc_cart)) {
-            if (hits) {
-                (void)fprintf(pf[1], "\n");
-                (void)fprintf(pf[2], "\n");
-            }
-            (void)elab_print(pf[1], pf[2], src_point, ray, dtc_height, dtc_offset);
+        (void)fprintf(pf[0], "\n%f %f %f %f", src_polar.rho, src_polar.phi, ray.theta, ray.phi);
+        
+        if (intcept(ray, src_polar, dtc_cart, dtc_radius)) {
+            if (hits) (void)fprintf(pf[1], "\n");
+            (void)elab_print(pf[1], src_polar, ray, dtc_cart, dtc_polar.phi);
             ++hits;
         }
     }
 
-
-    return 0;
-}
-
-int elab_print(file_t *pf1, file_t *pf2, polar2D_t src_polar, dir3D_t ray, point3D_t dtc_cart, double dtc_polar_phi) {
-    double u;
-    point3D_t hit_cart;
-
-    u = dtc_cart.z * tan(ray.theta);
-
-    hit_cart.x = src_polar.rho * cos(src_polar.phi) + u * cos(src_polar.phi - dtc_polar_phi);
-    hit_cart.y = src_polar.rho * sin(src_polar.phi) + u * sin(src_polar.phi - dtc_polar_phi);
-    hit_cart.z = dtc_cart.z;
-
+    (void)fprintf(stdout, "Hits: %d/%d\nRatio: %.6f\n", hits, n, (double)hits / (n * 2));
     
+    if (pf != NULL) {
+        for (i = 0; i < FILE_NUM; ++i) if (pf[i] != NULL) (void)fclose(pf[i]);
+        free(pf);
+    }
+
+    sprintf(buffer, "python3 newplot.py %s", file_name[1]);
+    system(buffer);
+    return 0;
 }

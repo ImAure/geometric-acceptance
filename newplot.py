@@ -9,7 +9,7 @@ if __name__ == "__main__":
     data = np.loadtxt(file_path)
 
     if data.shape[1] != 6:
-        raise ValueError("Ogni riga deve contenere esattamente sei numeri.")
+        raise ValueError("Ogni riga deve contenere esattamente otto numeri.")
 
     x_start, y_start, z_start = data[:, 0], data[:, 1], data[:, 2]
     x_end,   y_end,   z_end   = data[:, 3], data[:, 4], data[:, 5]

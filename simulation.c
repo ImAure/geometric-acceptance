@@ -3,8 +3,8 @@
 #include <math.h>
 #include <time.h>
 
-#define ARG_NUM  6
-#define FILE_NUM 3
+#define ARG_NUM  7
+#define FILE_NUM 2
 #define STRLEN   4096
 #define PREFIX  "./tmp/"
 #define SUFFIX  ".txt"
@@ -13,101 +13,117 @@
 #define ERR_FILE -2
 #define ERR       1
 
-typedef struct _dir3D {
-    double theta;
-    double phi;
-} dir3D_t;
+typedef struct _cart2D {
+    double x;
+    double y;
+} cart2D_t;
 
 typedef struct _polar2D {
     double rho;
     double phi;
 } polar2D_t;
 
-typedef struct _point3D {
+typedef struct _cart3D {
     double x;
     double y;
     double z;
+} cart3D_t;
+
+typedef struct _polar3D {
+    double rho;
+    double theta;
+    double phi;
+} polar3D_t;
+
+typedef struct _point2D {
+    cart2D_t  cart;
+    polar2D_t polar;
+} point2D_t;
+
+typedef struct _point3D {
+    cart3D_t  cart;
+    polar3D_t polar;
 } point3D_t;
+
+typedef struct _disc2D {
+    point2D_t center;
+    double    radius;
+} disc2D_t;
+
+typedef struct _disc3D {
+    point3D_t center;
+    double    radius;
+} disc3D_t;
 
 typedef FILE file_t;
 
-int rand_dir3D_gen(dir3D_t *ptr) {
-    if (ptr == NULL) return -1;
-    ptr->theta = acos(1 - 2 * ((double)rand() / RAND_MAX));
-    ptr->phi = ((double)rand() / RAND_MAX) * (2 * M_PI);
+int polar_to_cart2D(polar2D_t *src, cart2D_t *dst) {
+    if (src == NULL || dst == NULL) return -1;
+    dst->x = src->rho * cos(src->phi);
+    dst->y = src->rho * sin(src->phi);
     return 0;
 }
 
-int rand_polar2D_gen(polar2D_t *ptr, double max_rho){
-    if ((ptr == NULL) || (max_rho < 0)) return -1;
-    if (max_rho < 0) {
-        ptr->rho = 0;
-        ptr->phi = 0;
+int cart_to_polar2D(cart3D_t *src, polar2D_t *dst) {
+    if (src == NULL || dst == NULL) return -1;
+    dst->rho = sqrt(src->x * src->x + src->y * src->y);
+    dst->phi = atan2(src->y, src->x);
+    return 0;
+}
+
+int polar_to_cart3D(polar3D_t *src, cart3D_t *dst) {
+    if (src == NULL || dst == NULL) return -1;
+    dst->x = src->rho * sin(src->theta) * cos(src->phi);
+    dst->y = src->rho * sin(src->theta) * sin(src->phi);
+    dst->z = src->rho * cos(src->theta);
+    return 0; 
+}
+
+int rand_polar2D(polar2D_t *ptr, double radius) {
+    if (ptr == NULL) return -1;
+    ptr->rho = (radius < 0) ? 1 : (sqrt((double)rand() / RAND_MAX) * radius);
+    ptr->phi = (radius == 0) ? 0 : ((double)rand() / RAND_MAX) * (2 * M_PI);
+    return 0;
+}
+
+int rand_polar3D(polar3D_t *ptr, double radius) {
+    if (ptr == NULL) return -1;
+    ptr->rho = (radius < 0) ? 1 : (cbrt((double)rand() / RAND_MAX) * radius);
+    if (radius == 0) {
+        ptr->theta = 0;
+        ptr->phi   = 0;
     } else {
-        ptr->rho = sqrt(((double)rand() / RAND_MAX) * (max_rho * max_rho));
-        ptr->phi = ((double)rand() / RAND_MAX) * (2 * M_PI);
+        ptr->theta = acos(1 - 2 * ((double)rand() / RAND_MAX));
+        ptr->phi   = ((double)rand() / RAND_MAX) * (2 * M_PI);
     }
     return 0;
 }
 
-int intcept(dir3D_t ray, double height, double offset, double radius) {
-    double r2, u, u2, sin_theta, cos_theta;
-    
-    if (height == 0) return 0;
+int intercept(file_t *pf, point2D_t src, polar3D_t ray, disc3D_t detector3D, int *hits) {
+    point3D_t hit_point3D;
+    point2D_t dtc_point2D;
+    double u;
 
-    r2 = radius * radius;
-    u = (offset / height) * sin(ray.phi);
-    u2 = u * u;
-    sin_theta = sin(ray.theta);
-    cos_theta = cos(ray.theta);
+    u = detector3D.center.cart.z * tan(ray.theta);
+    if (cart_to_polar2D(&detector3D.center.cart, &dtc_point2D.polar)) return -1;
 
-    return ((sin_theta * sin_theta * ((height * height + offset * offset) * (1 + u2) + r2 * (1 - u2)) - r2 + 2 * u * r2 * sin_theta * cos_theta) <= 0);
-}
+    if ((u * u + dtc_point2D.polar.rho * dtc_point2D.polar.rho - 2 * u * dtc_point2D.polar.rho * cos(ray.phi - dtc_point2D.polar.phi)) <= detector3D.radius * detector3D.radius) {
+        hit_point3D.cart.x = src.cart.x + u * cos(ray.phi);
+        hit_point3D.cart.y = src.cart.y + u * sin(ray.phi);
+        hit_point3D.cart.z = detector3D.center.cart.z;
 
-int elab_print(file_t *pf1, file_t *pf2, polar2D_t src_polar, dir3D_t ray, double height, double offset) {
-    double ray_rho, equiv_y;
-    point3D_t src, dtc;
-    polar2D_t hist;
-
-    if ((pf1 == NULL) || (pf2 == NULL)) return -1;
-
-    src.x = src_polar.rho * cos(src_polar.phi);
-    src.y = src_polar.rho * sin(src_polar.phi);
-    src.z = 0;
-
-    ray_rho = height / cos(ray.theta);
-    /*
-     * dtc.x = ray_rho * sin(ray.theta) * cos(ray.phi) + src.x;
-     * dtc.y = ray_rho * sin(ray.theta) * sin(ray.phi) + src.y;
-     * dtc.z = height;
-     */
-
-    dtc.x = src.x + height * tan(ray.theta) * cos(ray.phi - src_polar.phi);
-    dtc.y = src.y + height * tan(ray.theta) * sin(ray.phi - src_polar.phi);
-    dtc.z = height;
-
-    equiv_y = dtc.y - offset;
-
-    hist.rho = sqrt((dtc.x * dtc.x) + (equiv_y * equiv_y));
-    hist.phi = (hist.rho == 0) ? 0 : atan2(equiv_y, dtc.x);
-
-    (void)fprintf(pf1, "%f %f %f %f %f %f", src.x, src.y, src.z, dtc.x, dtc.y, dtc.z);
-    (void)fprintf(pf2, "%f %f", hist.rho, hist.phi);
+        fprintf(pf, (*hits) ? ("\n%f %f %f %f %f %f") : ("%f %f %f %f %f %f"), src.cart.x, src.cart.y, 0.0, hit_point3D.cart.x, hit_point3D.cart.y, hit_point3D.cart.z);
+        ++(*hits);
+    }
     return 0;
 }
 
-int myexit(const int status, file_t **pf, int file_num, const char *message) {
+int my_exit(const int status, file_t **pf, int file_num, const char *message) {
     int i;
     (void)fprintf(stderr, "An error occurred:\n");
     switch (status) {
         case ERR_ARGC:
-            (void)fprintf(stderr, "Usage: %s <n> <r> <h> <d> <R> <output_file>\nWhere\n", message);
-            (void)fprintf(stderr, "\tn: number of points to be generated (positive integer);\n");
-            (void)fprintf(stderr, "\tr: radius of the source (cm, non negative)\n");
-            (void)fprintf(stderr, "\th: height of the detector (cm, positive);\n");
-            (void)fprintf(stderr, "\td: horizontal offset of the detector (cm);\n");
-            (void)fprintf(stderr, "\tR: radius of the detector (positive).\n");
-            (void)fprintf(stderr, "\toutput_file: the name of the file only with no extension, data will be saved in ./tmp/output_file.i.txt for i = 1,2,3.\n");
+            (void)fprintf(stderr, "Usage: %s <n> <src r> <dtc x> <dtc y> <dtc z> <dtc r> <output_file>\n", message);
             break;
         case ERR_FILE:
             (void)fprintf(stderr, "Could not open output file at '%s'\n", message);
@@ -116,7 +132,6 @@ int myexit(const int status, file_t **pf, int file_num, const char *message) {
             (void)fprintf(stderr, "%s\n", message);
             break;
     }
-
     if (pf != NULL) {
         for (i = 0; i < file_num; ++i) if (pf[i] != NULL) (void)fclose(pf[i]);
         free(pf);
@@ -125,67 +140,66 @@ int myexit(const int status, file_t **pf, int file_num, const char *message) {
 }
 
 int main(int argc, char *argv[]) {
-    double src_radius, dtc_height, dtc_offset, dtc_radius;
-    double equiv_offset;
-    int n, i, hits;
+    int i, n, hits;
     char buffer[STRLEN * 2], file_name[FILE_NUM][STRLEN];
-    file_t **pf;
-    dir3D_t ray;
-    polar2D_t src_point;
+    file_t **file;
+    disc3D_t source3D, detector3D_abs, detector3D_rel;
+    polar3D_t ray;
+    point2D_t src_point2D;
 
-    pf = (file_t **)malloc(sizeof(file_t) * FILE_NUM);
-    for (i = 0; i < FILE_NUM; ++i) (pf[i] = NULL);
+    file = (file_t **)calloc(FILE_NUM, sizeof(file_t *));
+
     srand(time(NULL));
-    
-    if (argc != (ARG_NUM + 1)) return myexit(ERR_ARGC, pf, FILE_NUM, argv[0]);
+
+    if (argc != (ARG_NUM + 1)) return my_exit(ERR_ARGC, file, FILE_NUM, argv[0]);
 
     n = atoi(argv[1]);
-    src_radius = atof(argv[2]);
-    dtc_height = atof(argv[3]);
-    dtc_offset = atof(argv[4]);
-    dtc_radius = atof(argv[5]);
+
+    source3D.center.cart.x = 0;
+    source3D.center.cart.y = 0;
+    source3D.center.cart.z = 0;
+    source3D.radius = atof(argv[2]);
+
+    detector3D_abs.center.cart.x = atof(argv[3]);
+    detector3D_abs.center.cart.y = atof(argv[4]);
+    detector3D_abs.center.cart.z = atof(argv[5]);
+    detector3D_abs.radius = atof(argv[6]);
 
     for (i = 0; i < FILE_NUM; ++i) {
-        (void)sprintf(file_name[i], "%s%s.%d%s", PREFIX, argv[6], i + 1, SUFFIX);
-        pf[i] = fopen(file_name[i], "w");
+        (void)sprintf(file_name[i], "%s%s.%d%s", PREFIX, argv[7], i + 1, SUFFIX);
+        file[i] = fopen(file_name[i], "w");
     }
 
-    if (n <= 0)         return myexit(ERR, pf, FILE_NUM, "Number of points must be a positive integer.");
-    if (src_radius < 0) return myexit(ERR, pf, FILE_NUM, "Source radius must be a non-negative number.");
-    if ((dtc_radius <= 0) || (dtc_height <= 0))
-                        return myexit(ERR, pf, FILE_NUM, "Detector radius and height must be positive numbers.");
-    if (pf == NULL)     return myexit(ERR, pf, FILE_NUM, "Couldn't allocate memory.");
-    for (i = 0; i < FILE_NUM; ++i) if (pf[i] == NULL) return myexit(ERR_FILE, pf, FILE_NUM, file_name[i]);
+    if (n <= 0)                     return my_exit(ERR, file, FILE_NUM, "Number of points must be a positive integer.");
+    if (source3D.radius < 0)        return my_exit(ERR, file, FILE_NUM, "Source radius must be a non-negative number.");
+    if (detector3D_abs.radius <= 0) return my_exit(ERR, file, FILE_NUM, "Detector radius must be a positive number.");
+    if (file == NULL)               return my_exit(ERR, file, FILE_NUM, "Couldn't allocate memory.");
+    for (i = 0; i < FILE_NUM; ++i)  if (file[i] == NULL) return my_exit(ERR_FILE, file, FILE_NUM, file_name[i]);
 
-    fprintf(stdout, "N: %d, src radius: %lf, dtc h: %lf, dtc offset: %lf, dtc radius: %lf\n", n, src_radius, dtc_height, dtc_offset, dtc_radius);
+    detector3D_rel.center.cart.z = detector3D_abs.center.cart.z;
+    detector3D_rel.radius =  detector3D_abs.radius;
 
     for (i = 0, hits = 0; i < n; ++i) {
-        if (rand_polar2D_gen(&src_point, src_radius) || rand_dir3D_gen(&ray)) return myexit(ERR, pf, FILE_NUM, "Random number generation failed.");
+        if (rand_polar2D(&src_point2D.polar,  source3D.radius)) return my_exit(ERR, file, FILE_NUM, "Random 2D point generation failed.");
+        if (rand_polar3D(&ray,               -1))               return my_exit(ERR, file, FILE_NUM, "Random direction generation failed.");
 
-        if (i) (void)fprintf(pf[0], "\n");
-        (void)fprintf(pf[0], "\n%f %f %f %f", src_point.rho, src_point.phi, ray.theta, ray.phi);
+        if (polar_to_cart2D(&src_point2D.polar, &src_point2D.cart)) return my_exit(ERR, file, FILE_NUM, "Invalid pointer in conversion");
 
-        equiv_offset = sqrt((src_point.rho * src_point.rho) + (dtc_offset * dtc_offset) - (2 * src_point.rho * dtc_offset * sin(src_point.phi)));
-        printf("eq offset %f\n", equiv_offset);
+        detector3D_rel.center.cart.x = detector3D_abs.center.cart.x - src_point2D.cart.x;
+        detector3D_rel.center.cart.y = detector3D_abs.center.cart.y - src_point2D.cart.y;
         
-        if(intcept(ray, dtc_height, equiv_offset, dtc_radius)) {
-            if (hits) {
-                (void)fprintf(pf[1], "\n");
-                (void)fprintf(pf[2], "\n");
-            }
-            (void)elab_print(pf[1], pf[2], src_point, ray, dtc_height, dtc_offset);
-            hits++;
-        }
-    }
-    
-    (void)fprintf(stdout, "Hits: %d/%d\nRatio: %.6f\n", hits, n, (double)hits / (n * 2));
-    
-    if (pf != NULL) {
-        for (i = 0; i < FILE_NUM; ++i) if (pf[i] != NULL) (void)fclose(pf[i]);
-        free(pf);
+        (void)fprintf(file[0], (i) ? ("\n%f %f %f %f") : ("%f %f %f %f"), src_point2D.polar.rho, src_point2D.polar.phi, ray.theta, ray.phi);
+
+        intercept(file[1], src_point2D, ray, detector3D_rel, &hits);
     }
 
-    sprintf(buffer, "python3 newplot.py %s", file_name[1]);
-    system(buffer);
+    (void)fprintf(stdout, "Hits: %d/%d\nRatio: %.6f\n", hits, n, (double)hits / (n * 2));
+    if (file != NULL) {
+        for (i = 0; i < FILE_NUM; ++i) if (file[i] != NULL) (void)fclose(file[i]);
+        (void)free(file);
+    }
+
+    (void)sprintf(buffer, "python3 newplot.py %s", file_name[1]);
+    (void)system(buffer);
     return 0;
 }
