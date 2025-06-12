@@ -1,15 +1,28 @@
+#!/usr/bin/env python3
+
+from os.path import isfile
+import sys
+import os
 import numpy as np
 import matplotlib.pyplot as plt
-import sys
 from mpl_toolkits.mplot3d import Axes3D
 
+ARG_NUM = 2
+NUM_IN_ROW = 6
+
 if __name__ == "__main__":
+    if len(sys.argv) != (ARG_NUM + 1):
+        print("Not enought arguments")
+        exit(-1)
     file_path = sys.argv[1]
+    if not os.path.isfile(file_path):
+        print(f"File {file_path} does not exist")
+        exit(-1)
 
     data = np.loadtxt(file_path)
 
-    if data.shape[1] != 6:
-        raise ValueError("Ogni riga deve contenere esattamente otto numeri.")
+    if data.shape[1] != NUM_IN_ROW:
+        raise ValueError("Each line must contain {NUM_IN_ROW} numbers.")
 
     x_start, y_start, z_start = data[:, 0], data[:, 1], data[:, 2]
     x_end,   y_end,   z_end   = data[:, 3], data[:, 4], data[:, 5]
@@ -20,13 +33,13 @@ if __name__ == "__main__":
     for xs, ys, zs, xe, ye, ze in zip(x_start, y_start, z_start, x_end, y_end, z_end):
         ax.plot([xs, xe], [ys, ye], [zs, ze], color='gray', alpha=0.1)
 
-    ax.scatter(x_start, y_start, z_start, c='red', s=5, label='Inizio')
-    ax.scatter(x_end, y_end, z_end, c='green', s=5, label='Fine')
+    ax.scatter(x_start, y_start, z_start, c='red', s=5, label='Source')
+    ax.scatter(x_end, y_end, z_end, c='green', s=5, label='Detector')
 
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_zlabel('Z')
-    plt.title("Segmenti 3D con punti di partenza e arrivo")
+    plt.title("Radiation with starting and end points")
     ax.legend()
 
     all_points = np.concatenate([data[:, 0:3], data[:, 3:6]])
