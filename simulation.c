@@ -8,7 +8,7 @@
 #define STRLEN   4096
 #define PREFIX  "./tmp/"
 #define SUFFIX  ".txt"
-#define PY_CALL "python3 plot.py"
+#define PY_CALL "python3 newplot.py"
 
 
 #define ERR_ARGC -1
@@ -104,6 +104,7 @@ int rand_polar3D(polar3D_t *ptr, double radius) {
 int intercept(file_t *pf, point2D_t src, polar3D_t ray, disc3D_t detector3D, int *hits) {
     point3D_t hit_point3D;
     point2D_t dtc_point2D;
+    point3D_t dtc_point3D_hist;
     point2D_t dtc_point2D_hist;
     double u;
 
@@ -114,13 +115,12 @@ int intercept(file_t *pf, point2D_t src, polar3D_t ray, disc3D_t detector3D, int
         hit_point3D.cart.x = src.cart.x + u * cos(ray.phi);
         hit_point3D.cart.y = src.cart.y + u * sin(ray.phi);
         hit_point3D.cart.z = detector3D.center.cart.z;
+        
+        dtc_point3D_hist.cart.x = hit_point3D.cart.x - (detector3D.center.cart.x + src.cart.x);
+        dtc_point3D_hist.cart.y = hit_point3D.cart.y - (detector3D.center.cart.y + src.cart.y);
 
-        /*
-         * dtc_point2D_hist.cart.x = hit_point3D.cart.x - detector3D.center.cart.x;
-         * dtc_point2D_hist.cart.y = hit_point3D.cart.y - detector3D.center.cart.y;
-         * cart_to_polar2D(&dtc_point2D_hist.cart, &dtc_point2D_hist.polar);
-         */
-
+        cart_to_polar2D(&dtc_point3D_hist.cart, &dtc_point2D_hist.polar);
+        
         fprintf(pf, (*hits) ? ("\n%f %f %f %f %f %f %f %f") : ("%f %f %f %f %f %f %f %f"), src.cart.x, src.cart.y, 0.0, hit_point3D.cart.x, hit_point3D.cart.y, hit_point3D.cart.z, dtc_point2D_hist.polar.rho, dtc_point2D_hist.polar.phi);
         ++(*hits);
     }

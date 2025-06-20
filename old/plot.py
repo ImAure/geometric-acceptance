@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 ARG_NUM = 2
-NUM_IN_ROW = 6
+NUM_IN_ROW = 8
 
 if __name__ == "__main__":
     if len(sys.argv) != (ARG_NUM + 1):
@@ -26,6 +26,7 @@ if __name__ == "__main__":
 
     x_start, y_start, z_start = data[:, 0], data[:, 1], data[:, 2]
     x_end,   y_end,   z_end   = data[:, 3], data[:, 4], data[:, 5]
+    hist_rho, hist_phi = data[:, 6], data[:, 7]
 
     fig = plt.figure(figsize=(10, 8))
     ax = fig.add_subplot(111, projection='3d')
@@ -58,4 +59,5 @@ if __name__ == "__main__":
     ax.set_ylim(mid_y - max_range, mid_y + max_range)
     ax.set_zlim(mid_z - max_range, mid_z + max_range)
 
+    plt.tight_layout()
     plt.show()
