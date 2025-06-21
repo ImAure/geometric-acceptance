@@ -22,12 +22,14 @@ def sector_vertices(r_inner, r_outer, theta_start, theta_end, z=0.0, n_points=8)
     inner_arc = [(r_inner*np.cos(t), r_inner*np.sin(t), z) for t in theta[::-1]]
     return outer_arc + inner_arc
 
-def plot_extruded_polar_histogram(rho, phi, r_max, N_r, N_theta):
+def plot_extruded_polar_histogram(rho, phi, r_max):
+    N_r = int(len(hist_rho) ** 0.20)
+    N_theta = N_r
     r_edges, theta_edges = polar_bins(r_max, N_r, N_theta)
     H, _, _ = np.histogram2d(rho, phi, bins=[r_edges, theta_edges])
 
     area = (np.pi * r_max**2) / (N_r * N_theta)
-    H_density = H / area
+    H_density = H / (area * len(rho))
 
     fig = plt.figure(figsize=(10, 8))
     ax = fig.add_subplot(111, projection='3d')
@@ -61,7 +63,7 @@ def plot_extruded_polar_histogram(rho, phi, r_max, N_r, N_theta):
     ax.set_xlabel("X")
     ax.set_ylabel("Y")
     ax.set_zlabel("Density [1/area]")
-    # ax.set_title("3D Polar Histogram")
+    ax.set_title("3D Polar Histogram")
 
     max_xy = r_max * 1.05
     ax.set_xlim(-max_xy, max_xy)
@@ -123,4 +125,4 @@ if __name__ == "__main__":
     plt.show()
 
     # === SECOND FIGURE: 3D polar histogram ===
-    plot_extruded_polar_histogram(hist_rho, hist_phi, r_detector, int(len(hist_rho) ** 0.20), int(len(hist_rho) ** 0.20))
+    plot_extruded_polar_histogram(hist_rho, hist_phi, r_detector)
