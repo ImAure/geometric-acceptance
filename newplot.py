@@ -8,7 +8,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 NUM_IN_ROW = 8
-N_R = 2
+N_R = 6
 N_THETA = 10
 
 def polar_bins(r_max, N_r, N_theta):
@@ -55,13 +55,13 @@ def plot_extruded_polar_histogram(rho, phi, r_max, N_r, N_theta):
                                     facecolor=plt.cm.inferno(h / np.max(H_density)),
                                     edgecolor='k',
                                     linewidths=0.2,
-                                    alpha=0.9)
+                                    alpha=0.7)
             ax.add_collection3d(poly)
 
     ax.set_xlabel("X")
     ax.set_ylabel("Y")
     ax.set_zlabel("Density [1/area]")
-    ax.set_title("3D Polar Histogram")
+    # ax.set_title("3D Polar Histogram")
 
     max_xy = r_max * 1.05
     ax.set_xlim(-max_xy, max_xy)
@@ -123,4 +123,4 @@ if __name__ == "__main__":
     plt.show()
 
     # === SECOND FIGURE: 3D polar histogram ===
-    plot_extruded_polar_histogram(hist_rho, hist_phi, r_detector, N_R, N_THETA)
+    plot_extruded_polar_histogram(hist_rho, hist_phi, r_detector, int(len(hist_rho) ** 0.20), int(len(hist_rho) ** 0.20))

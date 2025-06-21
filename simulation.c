@@ -151,6 +151,7 @@ int my_exit(const int status, file_t **pf, int file_num, const char *message) {
 int main(int argc, char *argv[]) {
     int i, n, hits;
     char buffer[STRLEN * 2], file_name[FILE_NUM][STRLEN];
+    double ratio;
     file_t **file;
     disc3D_t source3D, detector3D_abs, detector3D_rel;
     polar3D_t ray;
@@ -202,7 +203,9 @@ int main(int argc, char *argv[]) {
         intercept(file[1], src_point2D, ray, detector3D_rel, &hits);
     }
 
-    (void)fprintf(stdout, "Hits: %d/%d\nRatio: %.6f\n", hits, n, (double)hits / (n * 2));
+    ratio = (double)hits / (n * 2);
+    (void)fprintf(stdout, "Hits: %d/%d\nRatio: %.4f\nSolid angle: %.4f (sr) or %.4f*4pi (sr)\n", hits, n, ratio, (ratio * 4 * M_PI), ratio);
+
     if (file != NULL) {
         for (i = 0; i < FILE_NUM; ++i) if (file[i] != NULL) (void)fclose(file[i]);
         (void)free(file);
