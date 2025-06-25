@@ -10,7 +10,6 @@
 #define SUFFIX  ".txt"
 #define PY_CALL "python3 newplot.py"
 
-
 #define ERR_ARGC -1
 #define ERR_FILE -2
 #define ERR       1
@@ -129,20 +128,20 @@ int intercept(file_t *pf, point2D_t src, polar3D_t ray, disc3D_t detector3D, int
 
 int my_exit(const int status, file_t **pf, int file_num, const char *message) {
     int i;
-    (void)fprintf(stderr, "An error occurred:\n");
+    fprintf(stderr, "An error occurred:\n");
     switch (status) {
         case ERR_ARGC:
-            (void)fprintf(stderr, "Usage: %s <n> <src r> <dtc x> <dtc y> <dtc z> <dtc r> <output_file>\n", message);
+            fprintf(stderr, "Usage: %s <n> <src r> <dtc x> <dtc y> <dtc z> <dtc r> <output_file>\n", message);
             break;
         case ERR_FILE:
-            (void)fprintf(stderr, "Could not open output file at '%s'\n", message);
+            fprintf(stderr, "Could not open output file at '%s'\n", message);
             break;
         default:
-            (void)fprintf(stderr, "%s\n", message);
+            fprintf(stderr, "%s\n", message);
             break;
     }
     if (pf != NULL) {
-        for (i = 0; i < file_num; ++i) if (pf[i] != NULL) (void)fclose(pf[i]);
+        for (i = 0; i < file_num; ++i) if (pf[i] != NULL) fclose(pf[i]);
         free(pf);
     }
     return status;
@@ -176,7 +175,7 @@ int main(int argc, char *argv[]) {
     detector3D_abs.radius = atof(argv[6]);
 
     for (i = 0; i < FILE_NUM; ++i) {
-        (void)sprintf(file_name[i], "%s%s.%d%s", PREFIX, argv[7], i + 1, SUFFIX);
+        sprintf(file_name[i], "%s%s.%d%s", PREFIX, argv[7], i + 1, SUFFIX);
         file[i] = fopen(file_name[i], "w");
     }
 
@@ -198,20 +197,20 @@ int main(int argc, char *argv[]) {
         detector3D_rel.center.cart.x = detector3D_abs.center.cart.x - src_point2D.cart.x;
         detector3D_rel.center.cart.y = detector3D_abs.center.cart.y - src_point2D.cart.y;
         
-        (void)fprintf(file[0], (i) ? ("\n%f %f %f %f") : ("%f %f %f %f"), src_point2D.polar.rho, src_point2D.polar.phi, ray.theta, ray.phi);
+        fprintf(file[0], (i) ? ("\n%f %f %f %f") : ("%f %f %f %f"), src_point2D.polar.rho, src_point2D.polar.phi, ray.theta, ray.phi);
 
         intercept(file[1], src_point2D, ray, detector3D_rel, &hits);
     }
 
     ratio = (double)hits / (n * 2);
-    (void)fprintf(stdout, "Hits: %d/%d\nRatio: %.4f\nSolid angle: %.4f (sr) or %.4f*4pi (sr)\n", hits, n, ratio, (ratio * 4 * M_PI), ratio);
+    fprintf(stdout, "Hits: %d/%d\nRatio: %.4f\nSolid angle: %.4f (sr) or %.4f*4pi (sr)\n", hits, n, ratio, (ratio * 4 * M_PI), ratio);
 
     if (file != NULL) {
-        for (i = 0; i < FILE_NUM; ++i) if (file[i] != NULL) (void)fclose(file[i]);
-        (void)free(file);
+        for (i = 0; i < FILE_NUM; ++i) if (file[i] != NULL) fclose(file[i]);
+        free(file);
     }
 
-    (void)sprintf(buffer, "%s %s %f", PY_CALL, file_name[1], detector3D_abs.radius);
-    (void)system(buffer);
+    sprintf(buffer, "%s %s %f", PY_CALL, file_name[1], detector3D_abs.radius);
+    system(buffer);
     return 0;
 }

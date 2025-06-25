@@ -8,8 +8,6 @@ from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 NUM_IN_ROW = 8
-N_R = 6
-N_THETA = 10
 
 def polar_bins(r_max, N_r, N_theta):
     r_edges = r_max * np.sqrt(np.linspace(0, 1, N_r + 1))  # bins with const area

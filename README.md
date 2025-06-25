@@ -1,29 +1,59 @@
-# geometric-acceptance
+# Montecarlo method for geometric acceptance  
 
-Monte Carlo evaluation of the geometric acceptance of a flat disc detector placed above an extended, emissive flat disc. Each point on the emissive disc is modeled as an independent isotropic source.  
+This program evaluates the **geometric acceptance** of a flat disc-shaped detector using a Montecarlo method. The setup consists of:
 
-The user can control both the height of the detector and its horizontal offset from the vertical axis.
+- An **emissive disc** (the source), assumed to emit particles isotropically from each point on its surface.
+- A **detector disc**, positioned above the source at a configurable height and horizontal offset.
 
-## user guide
+The simulation models how many particles, emitted randomly from the source, successfully reach the detector, based purely on geometry and random numbers generation.
 
-To compile the code, type the following in your Linux terminal:
+## Features
+
+- Fully configurable parameters:
+  - Source radius
+  - Detector radius
+  - Detector height (distance above the source)
+  - Horizontal offset of the detector
+  - Number of simulated events
+- Output includes full point data and detection hits for further analysis and plotting.
+
+## Compile and run
+
+To compile the C simulation code, use:
 
 ```bash
 gcc -o path/to/executable simulation.c -lm
 ```
 
+You can replace gcc with any C compiler you prefer.
+
 To run the simulation, use:
 
 ```bash
-path/to/executable number_of_points source_radius detector_height detector_horizontal_offset detector_radius file_name
+path/to/executable number_of_points source_radius detector_x detector_y detector_z detector_radius file_name
 ```
 
-All numbers must be positive, except for the source radius, which can be 0, and the offset, which can also be negative.
+Arguments:
 
-The program generates an output file at `./tmp/file_name.i.txt` containing the full set of generated random points, along with data for the successful hits used for plotting and data analysis.  
+- `number_of_points`: total number of Montecarlo samples to simulate.
+- `source_radius`: radius of the emissive disc (can be 0);
+- `detector_x`, `*_y`, `*_z`: Coordinates of the center of the detector. `*_z` must be positive;
+- `detector_radius`: radius of the detector disc (must be positive);
+- `output_file_name`: name of the file where the output will be saved.
+
+The the output is saved in the `tmp` directory as `./tmp/file_name.i.txt`, where:
+
+- `i=1` contains the randomly generated source points and directions;
+- `i=2` contains the coordinates of starting and ending point that resulted in successful hits.
+
+## Dependencies
+
+- A C compiler such as `gcc`;
+- Python 3 for plotting
+  - Required Python packages: `matplotlib`, `numpy`, `mpl_toolkits`.
 
 ---
 
-## other files
+## Other files
 
-The remaining `.c` files in the `old` folder are drafts for simplified scenarios that do not involve a horizontal offset or an extended source. They are kept for reference and are not part of the main simulation.
+The `old/` directory contains legacy `.c` files used for testing simplified scenarios (e.g. no offset or point-like sources). These are provided for reference only and are not part of the main simulation.
